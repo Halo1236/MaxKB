@@ -9,7 +9,7 @@
 </p>
 <hr/>
 
-MaxKB 是一款基于 LLM 大语言模型的知识库问答系统。   
+MaxKB 是一款基于 LLM 大语言模型的知识库问答系统。MaxKB = Max Knowledge Base，旨在成为企业的最强大脑。
 
 - **开箱即用**：支持直接上传文档、自动爬取在线文档，支持文本自动拆分、向量化，智能问答交互体验好；
 - **无缝嵌入**：支持零编码快速嵌入到第三方业务系统；
@@ -24,10 +24,15 @@ docker run -d --name=maxkb -p 8080:8080 -v ~/.maxkb:/var/lib/postgresql/data 1pa
 # 密码: MaxKB@123..
 ```
 
-也可以通过 [1Panel 应用商店](https://apps.fit2cloud.com/1panel) 快速部署 MaxKB + Ollama + Llama 2，30 分钟内即可上线基于本地大模型的知识库问答系统，并嵌入到第三方业务系统中。
+你也可以通过 [1Panel 应用商店](https://apps.fit2cloud.com/1panel) 快速部署 MaxKB + Ollama + Llama 2，30 分钟内即可上线基于本地大模型的知识库问答系统，并嵌入到第三方业务系统中。
+
+你也可以在线体验：[DataEase 小助手](https://dataease.io/docs/v2/)，它是基于 MaxKB 搭建的智能问答系统，已经嵌入到 DataEase 产品及在线文档中。
+
+如你有更多问题，可以查看使用手册，或者通过论坛与我们交流。
 
 -   [使用手册](https://github.com/1Panel-dev/MaxKB/wiki/1-%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2)
 -   [论坛求助](https://bbs.fit2cloud.com/c/mk/11)
+-   [演示视频](https://www.bilibili.com/video/BV1BE421M7YM/)
 
 ## UI 展示
 
@@ -49,6 +54,10 @@ docker run -d --name=maxkb -p 8080:8080 -v ~/.maxkb:/var/lib/postgresql/data 1pa
 -   Langchain：[Langchain](https://www.langchain.com/)
 -   向量数据库：[PostgreSQL / pgvector](https://www.postgresql.org/)
 -   大模型：Azure OpenAI、百度千帆大模型、[Ollama](https://github.com/ollama/ollama)
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=1Panel-dev/MaxKB&type=Date)](https://star-history.com/#1Panel-dev/MaxKB&Date)
 
 ## License
 

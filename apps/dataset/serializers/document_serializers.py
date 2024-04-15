@@ -22,17 +22,19 @@ from common.db.search import native_search, native_page_search
 from common.event.common import work_thread_pool
 from common.event.listener_manage import ListenerManagement, SyncWebDocumentArgs
 from common.exception.app_exception import AppApiException
+from common.handle.impl.doc_split_handle import DocSplitHandle
+from common.handle.impl.pdf_split_handle import PdfSplitHandle
+from common.handle.impl.text_split_handle import TextSplitHandle
 from common.mixins.api_mixin import ApiMixin
 from common.util.common import post
 from common.util.field_message import ErrMessage
 from common.util.file_util import get_file_content
 from common.util.fork import Fork
-from common.util.split_model import SplitModel, get_split_model
+from common.util.split_model import get_split_model
 from dataset.models.data_set import DataSet, Document, Paragraph, Problem, Type, Status, ProblemParagraphMapping
 from dataset.serializers.common_serializers import BatchSerializer, MetaSerializer
 from dataset.serializers.paragraph_serializers import ParagraphSerializers, ParagraphInstanceSerializer
 from smartdoc.conf import PROJECT_DIR
-import chardet
 
 
 class DocumentEditInstanceSerializer(ApiMixin, serializers.Serializer):
@@ -468,8 +470,8 @@ class DocumentSerializers(ApiMixin, serializers.Serializer):
             super().is_valid(raise_exception=True)
             files = self.data.get('file')
             for f in files:
-                if f.size > 1024 * 1024 * 10:
-                    raise AppApiException(500, "上传文件最大不能超过10m")
+                if f.size > 1024 * 1024 * 100:
+                    raise AppApiException(500, "上传文件最大不能超过100MB")
 
         @staticmethod
         def get_request_params_api():
@@ -504,10 +506,12 @@ class DocumentSerializers(ApiMixin, serializers.Serializer):
     class SplitPattern(ApiMixin, serializers.Serializer):
         @staticmethod
         def list():
-            return [{'key': "#", 'value': '(?<=^)# .*|(?<=\\n)# .*'}, {'key': '##', 'value': '(?<!#)## (?!#).*'},
-                    {'key': '###', 'value': "(?<!#)### (?!#).*"}, {'key': '####', 'value': "(?<!#)#### (?!#).*"},
-                    {'key': '#####', 'value': "(?<!#)##### (?!#).*"},
-                    {'key': '######', 'value': "(?<!#)###### (?!#).*"},
+            return [{'key': "#", 'value': '(?<=^)# .*|(?<=\\n)# .*'},
+                    {'key': '##', 'value': '(?<=\\n)(?<!#)## (?!#).*|(?<=^)(?<!#)## (?!#).*'},
+                    {'key': '###', 'value': "(?<=\\n)(?<!#)### (?!#).*|(?<=^)(?<!#)### (?!#).*"},
+                    {'key': '####', 'value': "(?<=\\n)(?<!#)#### (?!#).*|(?<=^)(?<!#)#### (?!#).*"},
+                    {'key': '#####', 'value': "(?<=\\n)(?<!#)##### (?!#).*|(?<=^)(?<!#)##### (?!#).*"},
+                    {'key': '######', 'value': "(?<=\\n)(?<!#)###### (?!#).*|(?<=^)(?<!#)###### (?!#).*"},
                     {'key': '-', 'value': '(?<! )- .*'},
                     {'key': '空格', 'value': '(?<!\\s)\\s(?!\\s)'},
                     {'key': '分号', 'value': '(?<!；)；(?!；)'}, {'key': '逗号', 'value': '(?<!，)，(?!，)'},
@@ -593,17 +597,22 @@ class DocumentSerializers(ApiMixin, serializers.Serializer):
             return True
 
 
+class FileBufferHandle:
+    buffer = None
+
+    def get_buffer(self, file):
+        if self.buffer is None:
+            self.buffer = file.read()
+        return self.buffer
+
+
+default_split_handle = TextSplitHandle()
+split_handles = [DocSplitHandle(), PdfSplitHandle(), default_split_handle]
+
+
 def file_to_paragraph(file, pattern_list: List, with_filter: bool, limit: int):
-    data = file.read()
-    if pattern_list is not None and len(pattern_list) > 0:
-        split_model = SplitModel(pattern_list, with_filter, limit)
-    else:
-        split_model = get_split_model(file.name, with_filter=with_filter, limit=limit)
-    try:
-        content = data.decode(chardet.detect(data)['encoding'])
-    except BaseException as e:
-        return {'name': file.name,
-                'content': []}
-    return {'name': file.name,
-            'content': split_model.parse(content)
-            }
+    get_buffer = FileBufferHandle().get_buffer
+    for split_handle in split_handles:
+        if split_handle.support(file, get_buffer):
+            return split_handle.handle(file, pattern_list, with_filter, limit, get_buffer)
+    return default_split_handle.handle(file, pattern_list, with_filter, limit, get_buffer)

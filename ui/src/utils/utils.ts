@@ -38,8 +38,13 @@ export function fileType(name: string) {
   获得文件对应图片
 */
 export function getImgUrl(name: string) {
-  const type = fileType(name) || 'txt'
+  const type = isRightType(name) ? fileType(name) : 'unknow'
   return new URL(`../assets/${type}-icon.svg`, import.meta.url).href
+}
+// 是否是白名单后缀
+export function isRightType(name: string) {
+  const typeList = ['txt', 'pdf', 'docx', 'csv', 'md']
+  return typeList.includes(fileType(name))
 }
 
 /*
@@ -63,4 +68,16 @@ export function isAllPropertiesEmpty(obj: object) {
     (value) =>
       value === null || typeof value === 'undefined' || (typeof value === 'string' && !value)
   )
+}
+
+// 数组对象中某一属性值的集合
+export function getAttrsArray(array: Array<any>, attr: string) {
+  return array.map((item) => {
+    return item[attr]
+  })
+}
+
+// 求和
+export function getSum(array: Array<any>) {
+  return array.reduce((totol, item) => totol + item, 0)
 }

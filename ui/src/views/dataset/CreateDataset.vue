@@ -58,18 +58,19 @@ import StepSecond from './step/StepSecond.vue'
 import ResultSuccess from './step/ResultSuccess.vue'
 import datasetApi from '@/api/dataset'
 import type { datasetData } from '@/api/type/dataset'
-import documentApi from '@/api/document'
 import { MsgConfirm, MsgSuccess } from '@/utils/message'
 
 import useStore from '@/stores'
-const { dataset } = useStore()
+const { dataset, document } = useStore()
 const baseInfo = computed(() => dataset.baseInfo)
 const webInfo = computed(() => dataset.webInfo)
+const documentsFiles = computed(() => dataset.documentsFiles)
 
 const router = useRouter()
 const route = useRoute()
 const {
-  params: { id, type }
+  params: { type },
+  query: { id } // id为datasetID，有id的是上传文档
 } = route
 const isCreate = type === 'create'
 // const steps = [
@@ -112,7 +113,7 @@ function clearStore() {
 }
 function submit() {
   loading.value = true
-  const documents = [] as any[]
+  const documents = [] as any
   StepSecondRef.value?.paragraphList.map((item: any) => {
     documents.push({
       name: item.name,
@@ -120,11 +121,11 @@ function submit() {
     })
   })
   const obj = { ...baseInfo.value, documents } as datasetData
-  const id = route.query.id
   if (id) {
-    documentApi
-      .postDocument(id as string, documents)
-      .then((res) => {
+    // 上传文档
+    document
+      .asyncPostDocument(id as string, documents)
+      .then(() => {
         MsgSuccess('提交成功')
         clearStore()
         router.push({ path: `/dataset/${id}/document` })
@@ -141,7 +142,7 @@ function submit() {
   }
 }
 function back() {
-  if (baseInfo.value || webInfo.value || StepSecondRef.value?.paragraphList?.length > 0) {
+  if (baseInfo.value || webInfo.value || documentsFiles.value?.length > 0) {
     MsgConfirm(`提示`, `当前的更改尚未保存，确认退出吗?`, {
       confirmButtonText: '确认',
       type: 'warning'

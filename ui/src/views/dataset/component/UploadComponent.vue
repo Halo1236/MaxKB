@@ -16,9 +16,10 @@
         action="#"
         :auto-upload="false"
         :show-file-list="false"
-        accept=".txt, .md, .csv, .log"
+        accept=".txt, .md, .csv, .log, .docx, .pdf"
         :limit="50"
         :on-exceed="onExceed"
+        :on-change="filehandleChange"
       >
         <img src="@/assets/upload-icon.svg" alt="" />
         <div class="el-upload__text">
@@ -27,7 +28,9 @@
             <em> 选择文件上传 </em>
           </p>
           <div class="upload__decoration">
-            <p>支持格式：TXT、Markdown，每次最多上传50个文件，每个文件不超过 10MB</p>
+            <p>
+              支持格式：TXT、Markdown、PDF、DOCX，每次最多上传50个文件，每个文件不超过 100MB
+            </p>
             <p>若使用【高级分段】建议上传前规范文件的分段标识</p>
           </div>
         </div>
@@ -40,7 +43,7 @@
         <el-card shadow="never" class="file-List-card">
           <div class="flex-between">
             <div class="flex">
-              <img :src="getImgUrl(item && item?.name)" alt="" />
+              <img :src="getImgUrl(item && item?.name)" alt="" width="40" />
               <div class="ml-8">
                 <p>{{ item && item?.name }}</p>
                 <el-text type="info">{{ filesize(item && item?.size) || '0K' }}</el-text>
@@ -57,8 +60,8 @@
 </template>
 <script setup lang="ts">
 import { ref, reactive, onUnmounted, onMounted, computed, watch } from 'vue'
-import type { UploadProps } from 'element-plus'
-import { filesize, getImgUrl } from '@/utils/utils'
+import type { UploadFile, UploadFiles } from 'element-plus'
+import { filesize, getImgUrl, isRightType } from '@/utils/utils'
 import { MsgError } from '@/utils/message'
 import useStore from '@/stores'
 const { dataset } = useStore()
@@ -77,6 +80,22 @@ watch(form.value, (value) => {
 })
 function deleteFlie(index: number) {
   form.value.fileList.splice(index, 1)
+}
+
+// 上传on-change事件
+const filehandleChange = (file: any, fileList: UploadFiles) => {
+  //1、判断文件大小是否合法，文件限制不能大于10M
+  const isLimit = file?.size / 1024 / 1024 < 100
+  if (!isLimit) {
+    MsgError('文件大小超过 100MB')
+    fileList.splice(-1, 1) //移除当前超出大小的文件
+    return false
+  }
+  if (!isRightType(file?.name)) {
+    MsgError('文件格式不支持')
+    fileList.splice(-1, 1)
+    return false
+  }
 }
 
 const onExceed = () => {

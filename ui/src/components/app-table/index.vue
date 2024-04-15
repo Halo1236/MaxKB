@@ -6,9 +6,12 @@
           <el-input
             ref="quickInputRef"
             v-model="inputValue"
-            placeholder="请输入文档名称"
+            :placeholder="`请输入${quickCreateName}`"
             class="w-500 mr-12"
             autofocus
+            :maxlength="quickCreateMaxlength || '-'"
+            :show-word-limit="quickCreateMaxlength ? true : false"
+            @keydown.enter="submitHandle"
           />
 
           <el-button type="primary" @click="submitHandle" :disabled="loading">创建</el-button>
@@ -17,7 +20,7 @@
         <div v-else @click="quickCreateHandel" class="w-full">
           <el-button type="primary" link class="quich-button">
             <el-icon><Plus /></el-icon>
-            <span class="ml-4">快速创建空白文档</span>
+            <span class="ml-4">{{ quickCreatePlaceholder }}</span>
           </el-button>
         </div>
       </template>
@@ -43,6 +46,9 @@ import { ref, nextTick, watch, computed, onMounted } from 'vue'
 import { MsgError } from '@/utils/message'
 defineOptions({ name: 'AppTable' })
 
+import useStore from '@/stores'
+const { common } = useStore()
+
 const props = defineProps({
   paginationConfig: {
     type: Object,
@@ -51,7 +57,20 @@ const props = defineProps({
   quickCreate: {
     type: Boolean,
     default: false
-  }
+  },
+  quickCreateName: {
+    type: String,
+    default: '文档名称'
+  },
+  quickCreatePlaceholder: {
+    type: String,
+    default: '快速创建空白文档'
+  },
+  quickCreateMaxlength: {
+    type: Number,
+    default: () => 0
+  },
+  storeKey: String
 })
 const emit = defineEmits(['changePage', 'sizeChange', 'creatQuick'])
 
@@ -81,7 +100,7 @@ function submitHandle() {
       loading.value = false
     }, 200)
   } else {
-    MsgError('文件名称不能为空！')
+    MsgError(`${props.quickCreateName}不能为空！`)
   }
 }
 
@@ -94,9 +113,15 @@ function quickCreateHandel() {
 
 function handleSizeChange() {
   emit('sizeChange')
+  if (props.storeKey) {
+    common.savePage(props.storeKey, props.paginationConfig)
+  }
 }
 function handleCurrentChange() {
   emit('changePage')
+  if (props.storeKey) {
+    common.savePage(props.storeKey, props.paginationConfig)
+  }
 }
 defineExpose({})
 
